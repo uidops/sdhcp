@@ -388,7 +388,7 @@ calctimeout(int n, struct itimerspec *ts)
 static void
 run(void)
 {
-	int forked = 0, t;
+	/*int forked = 0,*/ int t;
 	struct itimerspec timeout = { 0 };
 	uint32_t renewaltime, rebindingtime, lease;
 
@@ -442,11 +442,11 @@ Bound:
 	lease = ntohl(lease);
 	acceptlease();
 	fputs("Congrats! You should be on the 'net.\n", stdout);
-	if (!fflag && !forked) {
+	/*if (!fflag && !forked) {
 		if (fork())
 			exit(0);
 		forked = 1;
-	}
+	}*/
 	timeout.it_value.tv_sec = renewaltime;
 	settimeout(0, &timeout);
 	timeout.it_value.tv_sec = rebindingtime;
@@ -555,6 +555,16 @@ main(int argc, char *argv[])
 		eprintf("setsockopt:");
 
 	strlcpy(ifreq.ifr_name, ifname, IF_NAMESIZE);
+
+	if (ioctl(sock, SIOCGIFFLAGS, &ifreq) == -1)
+		eprintf("ioctl:");
+
+	if (!(ifreq.ifr_flags&IFF_UP))
+		ifreq.ifr_flags ^= IFF_UP;
+
+	if (ioctl(sock, SIOCSIFFLAGS, &ifreq) == -1)
+		eprintf("ioctl:");
+
 	ioctl(sock, SIOCGIFINDEX, &ifreq);
 	if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, &ifreq, sizeof(ifreq)) == -1)
 		eprintf("setsockopt:");
